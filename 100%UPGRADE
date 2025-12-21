@@ -1469,7 +1469,7 @@ task.spawn(function()
                 breakable.Position
             )
         )
-
+        task.wait(0.075)
         seat.Anchored = true
         for i = 1,5 do
             seat.AssemblyLinearVelocity = Vector3.zero
