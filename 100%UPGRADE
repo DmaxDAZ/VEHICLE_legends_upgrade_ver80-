@@ -1395,22 +1395,52 @@ task.spawn(function()
     end
 end)
 
+local function waitForSnowFolder()
+    local f
+    repeat
+        task.wait(0.5)
+        f = workspace:FindFirstChild("BreakableSnowmens")
+    until f
+    return f
+end
+
+local function getNearestSnowman(folder, fromPos)
+    local nearestModel, nearestPart
+    local nearestDist = math.huge
+
+    for _, snowman in pairs(folder:GetChildren()) do
+        if snowman:IsA("Model") then
+            local breakable =
+                snowman:FindFirstChild("Breakable")
+                or snowman:FindFirstChild("BreakablePart")
+
+            if breakable and breakable:IsA("BasePart") then
+                local dist = (breakable.Position - fromPos).Magnitude
+                if dist < nearestDist then
+                    nearestDist = dist
+                    nearestModel = snowman
+                    nearestPart = breakable
+                end
+            end
+        end
+    end
+
+    return nearestModel, nearestPart
+end
+
 task.spawn(function()
+    local snowFolder = waitForSnowFolder()
+
     while true do
-        task.wait()
+        task.wait(0.1)
 
         if not getfenv().AutoSmashSnow then
             continue
         end
 
-        local snowFolder = workspace:FindFirstChild("BreakableSnowmens")
-        if not snowFolder then
-            continue
-        end
-
         local car = GetCar()
         local hum = getHum()
-        if not car or not car.PrimaryPart and not hum.Sit then
+        if not car or not car.PrimaryPart or not hum or not hum.Sit then
             continue
         end
 
@@ -1419,53 +1449,77 @@ task.spawn(function()
             continue
         end
 
-        for _, snowman in pairs(snowFolder:GetChildren()) do
-            if not snowman:IsA("Model") then
-                continue
-            end
+        local snowman, breakable =
+            getNearestSnowman(snowFolder, car.PrimaryPart.Position)
 
-            local breakable =
-                snowman:FindFirstChild("Breakable")
-                or snowman:FindFirstChild("BreakablePart")
-
-            if not breakable or not breakable:IsA("BasePart") then
-                continue
-            end
-
-            local startTime = tick()
-            local attackDuration = 5
-
-            while tick() - startTime < attackDuration and getfenv().AutoSmashSnow do
-                local offset = 10
-
-                local lookCF = CFrame.lookAt(
-                    car.PrimaryPart.Position,
-                    breakable.Position
-                )
-
-                local targetCF = CFrame.lookAt(
-                    breakable.Position - lookCF.LookVector * offset,
-                    breakable.Position
-                )
-                
-                if hum.Sit then
-                car:SetPrimaryPartCFrame(targetCF)
-                end
-
-                task.wait(0.05)
-
-                local speed = 150
-                seat.AssemblyLinearVelocity =
-                    seat.CFrame.LookVector * speed
-
-                task.wait(0.35)
-            end
-
-            task.wait(2)
-            break
+        if not snowman or not breakable then
+            task.wait(1)
+            continue
         end
+
+        local nearOffset = Vector3.new(
+            math.random(-12, 12),
+            0,
+            math.random(-12, 12)
+        )
+
+        car:SetPrimaryPartCFrame(
+            CFrame.lookAt(
+                breakable.Position + nearOffset,
+                breakable.Position
+            )
+        )
+
+        seat.Anchored = true
+        for i = 1,5 do
+            seat.AssemblyLinearVelocity = Vector3.zero
+            task.wait()
+        end
+
+        task.wait(2.5)
+
+        seat.Anchored = false
+
+        local startTime = tick()
+        local attackDuration = 3
+
+        while tick() - startTime < attackDuration
+            and getfenv().AutoSmashSnow do
+
+            if not breakable.Parent or not snowman.Parent then
+                break
+            end
+
+            local offset = 10
+
+            local lookCF = CFrame.lookAt(
+                car.PrimaryPart.Position,
+                breakable.Position
+            )
+
+            local targetCF = CFrame.lookAt(
+                breakable.Position - lookCF.LookVector * offset,
+                breakable.Position
+            )
+
+            if hum.Sit then
+                car:SetPrimaryPartCFrame(targetCF)
+            end
+
+            task.wait(0.05)
+
+            seat.AssemblyLinearVelocity =
+                seat.CFrame.LookVector * 150
+
+            task.wait(0.35)
+        end
+
+        task.wait(2)
     end
 end)
+
+
+
 
 task.spawn(function()
     while true do
