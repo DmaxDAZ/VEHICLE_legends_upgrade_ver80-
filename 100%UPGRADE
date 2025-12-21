@@ -516,7 +516,7 @@ local Window = Library:CreateWindow{
     Title = "[🏙️Map!] Vehicle Legends 🏎️ Cars!",
     SubTitle = "by DmaxDAZ",
     TabWidth = 160,
-    Size = UDim2.fromOffset(830, 525),
+    Size = UDim2.fromOffset(850, 530),
     Resize = true,
     MinSize = Vector2.new(520, 380),
     Acrylic = false,
@@ -1447,8 +1447,10 @@ task.spawn(function()
                     breakable.Position - lookCF.LookVector * offset,
                     breakable.Position
                 )
-
+                
+                if hum.Sit then
                 car:SetPrimaryPartCFrame(targetCF)
+                end
 
                 task.wait(0.05)
 
