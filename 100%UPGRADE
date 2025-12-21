@@ -1,4 +1,6 @@
 getfenv().AutoRace = false
+getfenv().AutoSmashSnow = false
+getfenv().AutoBronzeCup = false
 local RaceMode = "Remote"
 local Race = "None"
 local FarmSpeed = 250
@@ -41,6 +43,10 @@ local RacesQueueData = {
 
 local function getChar()
     return player.Character or player.CharacterAdded:Wait()
+end
+
+local function getHum()
+    return char:WaitForChild("Humanoid")
 end
 
 local function getRoot()
@@ -565,6 +571,18 @@ local tgFa = Tabs.Main:CreateToggle("TGFARM", {Title = "Toggle Auto Race", Defau
 
 tgFa:OnChanged(function(bool)
     getfenv().AutoRace = bool
+end)
+
+local tgSn = Tabs.Main:CreateToggle("TGSNOW", {Title = "Toggle Auto Snow Smash", Default = false })
+
+tgSn:OnChanged(function(bool)
+    getfenv().AutoSmashSnow = bool
+end)
+
+local tgbc = Tabs.Main:CreateToggle("TGBRONZECUP", {Title = "Toggle Auto Find Bronze Cup", Default = false })
+
+tgbc:OnChanged(function(bool)
+    getfenv().AutoBronzeCup = bool
 end)
 
 Tabs.Main:CreateButton{
@@ -1376,6 +1394,130 @@ task.spawn(function()
      end
     end
 end)
+
+task.spawn(function()
+    while true do
+        task.wait()
+
+        if not getfenv().AutoSmashSnow then
+            continue
+        end
+
+        local snowFolder = workspace:FindFirstChild("BreakableSnowmens")
+        if not snowFolder then
+            continue
+        end
+
+        local car = GetCar()
+        local hum = getHum()
+        if not car or not car.PrimaryPart and not hum.Sit then
+            continue
+        end
+
+        local seat = car:FindFirstChildWhichIsA("VehicleSeat", true)
+        if not seat then
+            continue
+        end
+
+        for _, snowman in pairs(snowFolder:GetChildren()) do
+            if not snowman:IsA("Model") then
+                continue
+            end
+
+            local breakable =
+                snowman:FindFirstChild("Breakable")
+                or snowman:FindFirstChild("BreakablePart")
+
+            if not breakable or not breakable:IsA("BasePart") then
+                continue
+            end
+
+            local startTime = tick()
+            local attackDuration = 2
+
+            while tick() - startTime < attackDuration and getfenv().AutoSmashSnow do
+                local offset = 8
+
+                local lookCF = CFrame.lookAt(
+                    car.PrimaryPart.Position,
+                    breakable.Position
+                )
+
+                local targetCF = CFrame.lookAt(
+                    breakable.Position - lookCF.LookVector * offset,
+                    breakable.Position
+                )
+
+                car:SetPrimaryPartCFrame(targetCF)
+
+                task.wait(0.05)
+
+                local speed = 150
+                seat.AssemblyLinearVelocity =
+                    seat.CFrame.LookVector * speed
+
+                task.wait(0.35)
+            end
+
+            task.wait(2)
+            break
+        end
+    end
+end)
+
+task.spawn(function()
+    while true do
+        task.wait(0.1)
+
+        if not getfenv().AutoBronzeCup then
+            continue
+        end
+
+        local bpFolder = workspace:FindFirstChild("BattlePassCollectables")
+        if not bpFolder then continue end
+
+        local cupsFolder = bpFolder:FindFirstChild("Bronze Cup")
+        if not cupsFolder then continue end
+
+        local root = getRoot()
+        local hum = getHum()
+        if hum.Sit then
+            hum:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+        if not root or not hum then continue end
+
+        for _, bronzecup in pairs(cupsFolder:GetChildren()) do
+            if not bronzecup:IsA("Model") then continue end
+
+            local cup = bronzecup:FindFirstChild("Bronze")
+            if not cup or not cup:IsA("BasePart") then continue end
+
+            while getfenv().AutoBronzeCup do
+                if not cup.Parent or not bronzecup.Parent then
+                    break
+                end
+
+                local randOffset = Vector3.new(
+                    math.random(-6, 6),
+                    0,
+                    math.random(-6, 6)
+                )
+
+                root.CFrame = CFrame.new(cup.Position + randOffset)
+                task.wait(0.15)
+
+                hum:MoveTo(cup.Position)
+                task.wait(0.4)
+            end
+
+            task.wait(0.1)
+        end
+    end
+end)
+
+
+
+
 
 Window:SelectTab(1)
 SaveManager:IgnoreThemeSettings()
