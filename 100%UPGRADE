@@ -1459,7 +1459,7 @@ task.spawn(function()
 
         local nearOffset = Vector3.new(
             math.random(-15, 15),
-            0,
+            1.25,
             math.random(-15, 15)
         )
 
@@ -1480,7 +1480,7 @@ task.spawn(function()
         seat.Anchored = false
 
         local startTime = tick()
-        local attackDuration = 2
+        local attackDuration = 1.75
 
         while tick() - startTime < attackDuration
             and getfenv().AutoSmashSnow do
