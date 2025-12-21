@@ -1463,34 +1463,37 @@ task.spawn(function()
             math.random(-15, 15)
         )
 
+        for i = 1,5 do
+            seat.AssemblyLinearVelocity = Vector3.zero
+            task.wait()
+        end
+
         car:SetPrimaryPartCFrame(
             CFrame.lookAt(
                 breakable.Position + nearOffset,
                 breakable.Position
             )
         )
-        task.wait(0.15)
-        seat.Anchored = true
-        for i = 1,5 do
-            seat.AssemblyLinearVelocity = Vector3.zero
-            task.wait()
-        end
 
         task.wait(2.5)
 
         seat.Anchored = false
 
         local startTime = tick()
-        local attackDuration = 3
+        local attackDuration = 2
 
         while tick() - startTime < attackDuration
             and getfenv().AutoSmashSnow do
 
             if not breakable.Parent or not snowman.Parent then
+                    for i = 1,5 do
+                        seat.AssemblyLinearVelocity = Vector3.zero
+                        task.wait()
+                    end
                 break
             end
 
-            local offset = 10
+            local offset = 15
 
             local lookCF = CFrame.lookAt(
                 car.PrimaryPart.Position,
