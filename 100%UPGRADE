@@ -1458,9 +1458,9 @@ task.spawn(function()
         end
 
         local nearOffset = Vector3.new(
-            math.random(-12, 12),
+            math.random(-15, 15),
             0,
-            math.random(-12, 12)
+            math.random(-15, 15)
         )
 
         car:SetPrimaryPartCFrame(
@@ -1469,7 +1469,7 @@ task.spawn(function()
                 breakable.Position
             )
         )
-        task.wait(0.075)
+        task.wait(0.15)
         seat.Anchored = true
         for i = 1,5 do
             seat.AssemblyLinearVelocity = Vector3.zero
