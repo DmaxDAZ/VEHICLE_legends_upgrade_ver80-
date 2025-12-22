@@ -1527,7 +1527,7 @@ task.spawn(function()
         task.wait(2.3)
 
         local startTime = tick()
-        local attackDuration = 1.5
+        local attackDuration = 0.5
 
         while tick() - startTime < attackDuration
             and getfenv().AutoSmashSnow do
