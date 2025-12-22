@@ -1,6 +1,6 @@
 getfenv().AutoRace = false
 getfenv().AutoSmashSnow = false
-getfenv().AutoBronzeCup = false
+getfenv().AutoTrophy = false
 local RaceMode = "Remote"
 local Race = "None"
 local FarmSpeed = 250
@@ -563,10 +563,10 @@ tgSn:OnChanged(function(bool)
     getfenv().AutoSmashSnow = bool
 end)
 
-local tgbc = Tabs.Main:CreateToggle("TGBRONZECUP", {Title = "Toggle Auto Find Bronze Cup", Default = false })
+local tgpy = Tabs.Main:CreateToggle("TGBTROPHY", {Title = "Toggle Auto Throphy", Default = false })
 
-tgbc:OnChanged(function(bool)
-    getfenv().AutoBronzeCup = bool
+tgpy:OnChanged(function(bool)
+    getfenv().AutoTrophy = bool
 end)
 
 Tabs.Main:CreateButton{
@@ -1575,14 +1575,14 @@ task.spawn(function()
     while true do
         task.wait(0.1)
 
-        if not getfenv().AutoBronzeCup then
+        if not getfenv().AutoTrophy then
             continue
         end
 
         local bpFolder = workspace:FindFirstChild("BattlePassCollectables")
         if not bpFolder then continue end
 
-        local cupsFolder = bpFolder:FindFirstChild("Bronze Cup")
+        local cupsFolder = bpFolder:FindFirstChildOfClass("Folder")
         if not cupsFolder then continue end
 
         local root = getRoot()
@@ -1592,14 +1592,14 @@ task.spawn(function()
         end
         if not root or not hum then continue end
 
-        for _, bronzecup in pairs(cupsFolder:GetChildren()) do
-            if not bronzecup:IsA("Model") then continue end
+        for _, trophy in pairs(cupsFolder:GetChildren()) do
+            if not trophy:IsA("Model") then continue end
 
-            local cup = bronzecup:FindFirstChild("Bronze")
+            local cup = trophy:FindFirstChild("Bronze") or trophy:FindFirstChild("Silver")
             if not cup or not cup:IsA("BasePart") then continue end
 
-            while getfenv().AutoBronzeCup do
-                if not cup.Parent or not bronzecup.Parent then
+            while getfenv().AutoTrophy do
+                if not cup.Parent or not trophy.Parent then
                     break
                 end
 
