@@ -1,6 +1,7 @@
 getfenv().AutoRace = false
 getfenv().AutoSmashSnow = false
 getfenv().AutoTrophy = false
+getfenv().autofarm = false
 local RaceMode = "Remote"
 local Race = "None"
 local FarmSpeed = 250
@@ -548,7 +549,7 @@ local race = Tabs.Main:CreateDropdown("RaceSelect", {
     Title = "Select Race",
     Values = getRacesList(),
     Multi = false,
-    Default = 1,
+    Default = "Circuit Race",
 })
 
 race:OnChanged(function(Value)
@@ -571,6 +572,31 @@ local tgpy = Tabs.Main:CreateToggle("TGBTROPHY", {Title = "Toggle Auto Throphy",
 
 tgpy:OnChanged(function(bool)
     getfenv().AutoTrophy = bool
+end)
+
+local highlight
+
+local tgfm = Tabs.Main:CreateToggle("TGFARM", {Title = "Toggle Auto Farm (Straight Drive)", Default = false })
+
+tgfm:OnChanged(function(bool)
+    if bool then
+        if car and not highlight then
+            highlight = Instance.new("Highlight")
+            highlight.Parent = car
+            highlight.FillColor = Color3.fromRGB(0, 0, 255)
+            highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+            highlight.FillTransparency = 0.5
+            highlight.OutlineTransparency = 0
+            highlight.DepthMode = Enum.HighlightDepthMode.Occluded
+        end
+    else
+        if highlight then
+            highlight:Destroy()
+            highlight = nil
+        end
+    end
+
+    getfenv().autofarm = bool
 end)
 
 Tabs.Main:CreateButton{
@@ -1625,7 +1651,24 @@ task.spawn(function()
     end
 end)
 
-
+task.spawn(function()
+    while true do
+        RunService.Heartbeat:Wait()
+        if getfenv().autofarm then
+        local car = GetCar()
+        if car and car.PrimaryPart and car:FindFirstChild("VehicleSeat") then
+            local seat = car:FindFirstChild("VehicleSeat")
+            local speed = 500
+            local forward = car.PrimaryPart.CFrame.LookVector
+            seat.AssemblyLinearVelocity = forward * speed + Vector3.new(0, 1, 0)
+            task.wait(8)
+            seat.AssemblyLinearVelocity = Vector3.zero
+            car:SetPrimaryPartCFrame(CFrame.new(8568.36719, -13.6479845, -4101.99316, -0.488822728, -0.0014976894, 0.872381806, 0.000203758187, 0.99999845, 0.00183095247, -0.872382939, 0.00107276603, -0.488821596))
+            task.wait(0.1)
+        end
+       end
+    end
+end)
 
 
 
