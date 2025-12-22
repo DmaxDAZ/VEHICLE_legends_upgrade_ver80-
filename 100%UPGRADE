@@ -1595,7 +1595,7 @@ task.spawn(function()
         for _, trophy in pairs(cupsFolder:GetChildren()) do
             if not trophy:IsA("Model") then continue end
 
-            local cup = trophy:FindFirstChild("Bronze") or trophy:FindFirstChild("Silver")
+            local cup = trophy:FindFirstChild("Bronze") or trophy:FindFirstChild("Silver") or trophy:FindFirstChild("Gold") or trophy:FindFirstChild("Primary")
             if not cup or not cup:IsA("BasePart") then continue end
 
             while getfenv().AutoTrophy do
