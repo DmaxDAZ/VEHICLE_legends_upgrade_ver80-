@@ -524,6 +524,10 @@ local Tabs = {
     Misc = Window:CreateTab{
         Title = "Misc",
         Icon = "microchip"
+    },
+    Saves = Window:CreateTab{
+        Title = "Config",
+        Icon = "save"
     }
 }
 
@@ -1527,7 +1531,7 @@ task.spawn(function()
         task.wait(2.3)
 
         local startTime = tick()
-        local attackDuration = 0.5
+        local attackDuration = 0.35
 
         while tick() - startTime < attackDuration
             and getfenv().AutoSmashSnow do
@@ -1627,6 +1631,16 @@ end)
 
 Window:SelectTab(1)
 SaveManager:IgnoreThemeSettings()
+
+SaveManager:SetLibrary(Library)
+InterfaceManager:SetLibrary(Library)
+SaveManager:BuildConfigSection(Tabs.Saves)
+
+Library:Notify{
+    Title = "Info",
+    Content = "The script has been loaded.",
+    Duration = 8
+}
 
 player.CharacterAdded:Connect(function(newChar)
     player.MaximumSimulationRadius = math.huge
