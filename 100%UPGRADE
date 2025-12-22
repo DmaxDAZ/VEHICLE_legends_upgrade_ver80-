@@ -549,7 +549,7 @@ local race = Tabs.Main:CreateDropdown("RaceSelect", {
     Title = "Select Race",
     Values = getRacesList(),
     Multi = false,
-    Default = "Circuit Race",
+    Default = "Around The Map",
 })
 
 race:OnChanged(function(Value)
@@ -579,6 +579,7 @@ local highlight
 local tgfm = Tabs.Main:CreateToggle("TGFARM", {Title = "Toggle Auto Farm (Straight Drive)", Default = false })
 
 tgfm:OnChanged(function(bool)
+    local car = GetCar()
     if bool then
         if car and not highlight then
             highlight = Instance.new("Highlight")
@@ -607,6 +608,7 @@ Tabs.Main:CreateButton{
             local weight = car:FindFirstChild("Weight") or car.PrimaryPart
             if weight then
                 local root = getRoot()
+                if not root then return end
                 root.CFrame = weight.CFrame
             else
                 Library:Notify({
@@ -716,12 +718,12 @@ view:OnChanged(function(bool)
                     spawn(function()
                         while getfenv().spectate do
                             RunService.Heartbeat:Wait()
-                             workspace:WaitForChild("Camera").CameraSubject = targetPlayer.Character.Humanoid
+                             workspace:WaitForChild("Camera").CameraSubject = targetPlayer.Character:WaitForChild("Humanoid")
                         end
                     end)
                  else
                     for i = 1, 75 do
-                    workspace:WaitForChild("Camera").CameraSubject = myCharacter.Humanoid
+                    workspace:WaitForChild("Camera").CameraSubject = myCharacter:WaitForChild("Humanoid")
                     task.wait()
                     end
                  end
