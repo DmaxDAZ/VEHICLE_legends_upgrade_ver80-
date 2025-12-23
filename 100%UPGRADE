@@ -14,6 +14,7 @@ local player = game:GetService("Players").LocalPlayer
 local char = player.Character
 local ts, TeleportService = game:GetService("TeleportService"), game:GetService("TeleportService")
 local gui = player.PlayerGui:WaitForChild("Races")
+local RacePos = game:GetService("ReplicatedStorage"):WaitForChild("Storage"):WaitForChild("RaceTeleports")
 
 local Platform = Instance.new("Part")
 Platform.Name = "AutoRacePlatform"
@@ -55,8 +56,21 @@ local function getRoot()
 end
 
 local function GetCar()
-    return workspace:FindFirstChild("Vehicles"):FindFirstChild(player.Name.."'s Car")
+    local vehicles = workspace:FindFirstChild("Vehicles")
+    if not vehicles then return nil end
+
+    for _, car in pairs(vehicles:GetChildren()) do
+        if car:IsA("Model") then
+            local owner = car:FindFirstChild("Owner")
+            if owner and owner:IsA("StringValue") and owner.Value == player.Name then
+                return car
+            end
+        end
+    end
+
+    return vehicles:FindFirstChild(player.Name .. "'s Car")
 end
+
 
 local function plrList()
     local players = {}
@@ -498,7 +512,7 @@ local SaveManager = loadstring(game:HttpGetAsync("https://raw.githubusercontent.
 local InterfaceManager = loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/ActualMasterOogway/Fluent-Renewed/master/Addons/InterfaceManager.luau"))()
  
 local Window = Library:CreateWindow{
-    Title = "[🏙️Map!] Vehicle Legends 🏎️ Cars!",
+    Title = "[🎅Event] Vehicle Legends 🏎️ Cars!",
     SubTitle = "by DmaxDAZ",
     TabWidth = 160,
     Size = UDim2.fromOffset(850, 530),
@@ -603,12 +617,20 @@ end)
 Tabs.Main:CreateButton{
     Title = "Teleport to your vehicle",
     Callback = function()
-    local car = GetCar()
+        local car = GetCar()
         if car then
             local weight = car:FindFirstChild("Weight") or car.PrimaryPart
             if weight then
                 local root = getRoot()
-                if not root then return end
+                local hum = getHum()
+                if not root then
+                    Library:Notify({
+                        Title = "Info",
+                        Content = "Fail to teleport: Character has no RootPart.",
+                        Duration = 8
+                    })
+                    return
+                end
                 root.CFrame = weight.CFrame
             else
                 Library:Notify({
@@ -626,6 +648,7 @@ Tabs.Main:CreateButton{
         end
     end
 }
+
 
 local Target = Tabs.Players:AddDropdown("TargetPlayer", {
     Title = "Select player",
@@ -915,6 +938,73 @@ Tabs.Misc:AddButton({
     end
 })
 
+local hide = Tabs.Misc:CreateToggle("HIDE", {Title = "Toggle Hide Guis", Default = false })
+
+hide:OnChanged(function(bool)
+    if bool then
+        game:GetService("Players").LocalPlayer.PlayerGui:WaitForChild("ChassisGui").Enabled = false
+        game:GetService("Players").LocalPlayer.PlayerGui:WaitForChild("LeaderboardGui").Enabled = false
+        game:GetService("Players").LocalPlayer.PlayerGui:WaitForChild("ScreenGui").Enabled = false
+        game:GetService("Players").LocalPlayer.PlayerGui:WaitForChild("MoneyMultiplierGui").Enabled = false
+        game:GetService("Players").LocalPlayer.PlayerGui:WaitForChild("TopBarButtons").Enabled = false
+    else
+        game:GetService("Players").LocalPlayer.PlayerGui:WaitForChild("ChassisGui").Enabled = true
+        game:GetService("Players").LocalPlayer.PlayerGui:WaitForChild("LeaderboardGui").Enabled = true
+        game:GetService("Players").LocalPlayer.PlayerGui:WaitForChild("ScreenGui").Enabled = true
+        game:GetService("Players").LocalPlayer.PlayerGui:WaitForChild("MoneyMultiplierGui").Enabled = true
+        game:GetService("Players").LocalPlayer.PlayerGui:WaitForChild("TopBarButtons").Enabled = true
+    end
+end)
+
+local norenderCo = "White"
+
+local NORENCO = Tabs.Misc:CreateDropdown("mode", {
+    Title = "No render mode color",
+    Values = {"White", "Black"},
+    Multi = false,
+    Default = 2,
+})
+
+NORENCO:OnChanged(function(Value)
+    norenderCo = Value
+end)
+
+local gui
+
+local norender = Tabs.Misc:CreateToggle("RENDER", {Title = "Toggle Render", Default = false })
+
+norender:OnChanged(function(bool)
+    if bool then
+        if norenderCo == "White" then
+            RunService:Set3dRenderingEnabled(false)
+
+        elseif norenderCo == "Black" then
+            RunService:Set3dRenderingEnabled(false)
+
+            gui = Instance.new("ScreenGui")
+            gui.Name = "BlackScreen"
+            gui.IgnoreGuiInset = true
+            gui.ResetOnSpawn = false
+            gui.Parent = player:WaitForChild("PlayerGui")
+
+            local frame = Instance.new("Frame")
+            frame.Size = UDim2.new(1, 0, 1, 0)
+            frame.Position = UDim2.new(0, 0, 0, 0)
+            frame.BackgroundColor3 = Color3.new(0, 0, 0)
+            frame.BorderSizePixel = 0
+            frame.Parent = gui
+        end
+    else
+        RunService:Set3dRenderingEnabled(true)
+
+        if gui then
+            gui:Destroy()
+            gui = nil
+        end
+    end
+end)
+
+
 local Racing = false
 
 task.spawn(function()
@@ -957,11 +1047,12 @@ task.spawn(function()
         end
 
         if not timer.Visible then
-            if player:DistanceFromCharacter(Vector3.new(723, 6, -1818)) > 15 and not circuitRace:GetAttribute("RaceActive") then
+            local root = getRoot()
+            if (root.Position - RacePos:WaitForChild("Circuit Race").Value.Position).Magnitude > 15 and not circuitRace:GetAttribute("RaceActive") then
                 pcall(function()
                     for i = 1,5 do
                     car.VehicleSeat.AssemblyLinearVelocity = Vector3.zero
-                    car:PivotTo(CFrame.new(723, 6, -1818))
+                    car:PivotTo(RacePos:WaitForChild("Circuit Race").Value * CFrame.new(0, 3.5, 0))
                     task.wait()
                     end
                 end)
@@ -993,11 +1084,12 @@ task.spawn(function()
             Racing = false
         end
         if not timer.Visible then
-            if player:DistanceFromCharacter(Vector3.new(600, 5, -1389)) > 15 and not mountaindash:GetAttribute("RaceActive") then
+            local root = getRoot()
+            if (root.Position - RacePos:WaitForChild("Mountain Dash").Value.Position).Magnitude > 15 and not mountaindash:GetAttribute("RaceActive") then
                 pcall(function()
                     for i = 1,5 do
                     car.VehicleSeat.AssemblyLinearVelocity = Vector3.zero
-                    car:PivotTo(CFrame.new(600, 5, -1389))
+                    car:PivotTo(RacePos:WaitForChild("Mountain Dash").Value * CFrame.new(0, 3.5, 0))
                     task.wait()
                     end
                 end)
@@ -1029,11 +1121,12 @@ task.spawn(function()
             Racing = false
         end
         if not timer.Visible then
-            if player:DistanceFromCharacter(Vector3.new(740, 5, -1379)) > 15 and not aruoundthemap:GetAttribute("RaceActive") then
+            local root = getRoot()
+            if (root.Position - RacePos:WaitForChild("Around The Map").Value.Position).Magnitude > 15 and not aruoundthemap:GetAttribute("RaceActive") then
                 pcall(function()
                     for i = 1,5 do
                     car.VehicleSeat.AssemblyLinearVelocity = Vector3.zero
-                    car:PivotTo(CFrame.new(740, 5, -1379))
+                    car:PivotTo(RacePos:WaitForChild("Around The Map").Value * CFrame.new(0, 3.5, 0))
                     task.wait()
                     end
                 end)
@@ -1065,11 +1158,12 @@ task.spawn(function()
             Racing = false
         end
         if not timer.Visible then
-            if player:DistanceFromCharacter(Vector3.new(716, 5, -1929)) > 15 and not beachdash:GetAttribute("RaceActive") then
+            local root = getRoot()
+            if (root.Position - RacePos:WaitForChild("Beach Dash").Value.Position).Magnitude > 15 and not beachdash:GetAttribute("RaceActive") then
                 pcall(function()
                     for i = 1,5 do
                     car.VehicleSeat.AssemblyLinearVelocity = Vector3.zero
-                    car:PivotTo(CFrame.new(716, 5, -1929))
+                    car:PivotTo(RacePos:WaitForChild("Beach Dash").Value * CFrame.new(0, 3.5, 0))
                     task.wait()
                     end
                 end)
@@ -1101,11 +1195,12 @@ task.spawn(function()
             Racing = false
         end
         if not timer.Visible then
-            if player:DistanceFromCharacter(Vector3.new(724, 5, -1727)) > 15 and not desertrace:GetAttribute("RaceActive") then
+            local root = getRoot()
+            if (root.Position - RacePos:WaitForChild("Desert Race").Value.Position).Magnitude > 15 and not desertrace:GetAttribute("RaceActive") then
                 pcall(function()
                     for i = 1,5 do
                     car.VehicleSeat.AssemblyLinearVelocity = Vector3.zero
-                    car:PivotTo(CFrame.new(724, 5, -1727))
+                    car:PivotTo(RacePos:WaitForChild("Desert Race").Value * CFrame.new(0, 3.5, 0))
                     task.wait()
                     end
                 end)
@@ -1137,11 +1232,12 @@ task.spawn(function()
             Racing = false
         end
         if not timer.Visible then
-            if player:DistanceFromCharacter(Vector3.new(572, 5, -1898)) > 15 and not dragrace:GetAttribute("RaceActive") then
+            local root = getRoot()
+            if (root.Position - RacePos:WaitForChild("Drag Race").Value.Position).Magnitude > 15 and not dragrace:GetAttribute("RaceActive") then
                 pcall(function()
                     for i = 1,5 do
                     car.VehicleSeat.AssemblyLinearVelocity = Vector3.zero
-                    car:PivotTo(CFrame.new(572, 5, -1898))
+                    car:PivotTo(RacePos:WaitForChild("Drag Race").Value * CFrame.new(0, 3.5, 0))
                     task.wait()
                     end
                 end)
@@ -1173,11 +1269,12 @@ task.spawn(function()
             Racing = false
         end
         if not timer.Visible then
-            if player:DistanceFromCharacter(Vector3.new(581, 8, -1815)) > 15 and not highway:GetAttribute("RaceActive") then
+            local root = getRoot()
+            if (root.Position - RacePos:WaitForChild("Highway Race").Value.Position).Magnitude > 15 and not highway:GetAttribute("RaceActive") then
                 pcall(function()
                     for i = 1,5 do
                     car.VehicleSeat.AssemblyLinearVelocity = Vector3.zero
-                    car:PivotTo(CFrame.new(581, 8, -1815))
+                    car:PivotTo(RacePos:WaitForChild("Highway Race").Value * CFrame.new(0, 3.5, 0))
                     task.wait()
                     end
                 end)
@@ -1209,11 +1306,12 @@ task.spawn(function()
             Racing = false
         end
         if not timer.Visible then
-            if player:DistanceFromCharacter(Vector3.new(746, 7, -1514)) > 15 and not miamicitycircuit:GetAttribute("RaceActive") then
+            local root = getRoot()
+            if (root.Position - RacePos:WaitForChild("Miami City Circuit").Value.Position).Magnitude > 15 and not miamicitycircuit:GetAttribute("RaceActive") then
                 pcall(function()
                     for i = 1,5 do
                     car.VehicleSeat.AssemblyLinearVelocity = Vector3.zero
-                    car:PivotTo(CFrame.new(746, 7, -1514))
+                    car:PivotTo(RacePos:WaitForChild("Miami City Circuit").Value * CFrame.new(0, 3.5, 0))
                     task.wait()
                     end
                 end)
@@ -1245,11 +1343,12 @@ task.spawn(function()
             Racing = false
         end
         if not timer.Visible then
-            if player:DistanceFromCharacter(Vector3.new(584, 7, -1715)) > 15 and not tropicaldash:GetAttribute("RaceActive") then
+            local root = getRoot()
+            if (root.Position - RacePos:WaitForChild("Tropical Dash").Value.Position).Magnitude > 15 and not tropicaldash:GetAttribute("RaceActive") then
                 pcall(function()
                     for i = 1,5 do
                     car.VehicleSeat.AssemblyLinearVelocity = Vector3.zero
-                    car:PivotTo(CFrame.new(584, 7, -1715))
+                    car:PivotTo(RacePos:WaitForChild("Tropical Dash").Value * CFrame.new(0, 3.5, 0))
                     task.wait()
                     end
                 end)
@@ -1281,11 +1380,12 @@ task.spawn(function()
             Racing = false
         end
         if not timer.Visible then
-            if player:DistanceFromCharacter(Vector3.new(586, 7, -1499)) > 15 and not offroadrace:GetAttribute("RaceActive") then
+            local root = getRoot()
+            if (root.Position - RacePos:WaitForChild("Offroad Race").Value.Position).Magnitude > 15 and not offroadrace:GetAttribute("RaceActive") then
                 pcall(function()
                     for i = 1,5 do
                     car.VehicleSeat.AssemblyLinearVelocity = Vector3.zero
-                    car:PivotTo(CFrame.new(586, 7, -1499))
+                    car:PivotTo(RacePos:WaitForChild("Offroad Race").Value * CFrame.new(0, 3.5, 0))
                     task.wait()
                     end
                 end)
@@ -1317,11 +1417,12 @@ task.spawn(function()
             Racing = false
         end
         if not timer.Visible then
-            if player:DistanceFromCharacter(Vector3.new(564, 7, -1991)) > 15 and not circuitmotorace:GetAttribute("RaceActive") then
+            local root = getRoot()
+            if (root.Position - RacePos:WaitForChild("Circuit Moto Race").Value.Position).Magnitude > 15 and not circuitmotorace:GetAttribute("RaceActive") then
                 pcall(function()
                     for i = 1,5 do
                     car.VehicleSeat.AssemblyLinearVelocity = Vector3.zero
-                    car:PivotTo(CFrame.new(564, 7, -1991))
+                    car:PivotTo(RacePos:WaitForChild("Circuit Moto Race").Value * CFrame.new(0, 3.5, 0))
                     task.wait()
                     end
                 end)
@@ -1353,11 +1454,12 @@ task.spawn(function()
             Racing = false
         end
         if not timer.Visible then
-            if player:DistanceFromCharacter(Vector3.new(720, 7, -2007)) > 15 and not kartingrace:GetAttribute("RaceActive") then
+            local root = getRoot()
+            if (root.Position - RacePos:WaitForChild("Karting Race").Value.Position).Magnitude > 15 and not kartingrace:GetAttribute("RaceActive") then
                 pcall(function()
                     for i = 1,5 do
                     car.VehicleSeat.AssemblyLinearVelocity = Vector3.zero
-                    car:PivotTo(CFrame.new(720, 7, -2007))
+                    car:PivotTo(RacePos:WaitForChild("Karting Race").Value * CFrame.new(0, 3.5, 0))
                     task.wait()
                     end
                 end)
@@ -1389,11 +1491,12 @@ task.spawn(function()
             Racing = false
         end
         if not timer.Visible then
-            if player:DistanceFromCharacter(Vector3.new(3897, 9, -3065)) > 15 and not airrace:GetAttribute("RaceActive") then
+            local root = getRoot()
+            if (root.Position - RacePos:WaitForChild("Air Race").Value.Position).Magnitude > 24 and not airrace:GetAttribute("RaceActive") then
                 pcall(function()
                     for i = 1,5 do
                     car.VehicleSeat.AssemblyLinearVelocity = Vector3.zero
-                    car:PivotTo(CFrame.new(3897, 9, -3065))
+                    car:PivotTo(RacePos:WaitForChild("Air Race").Value * CFrame.new(0, 4.5, 0))
                     task.wait()
                     end
                 end)
@@ -1425,11 +1528,12 @@ task.spawn(function()
             Racing = false
         end
         if not timer.Visible then
-            if player:DistanceFromCharacter(Vector3.new(184, -6, -1120)) > 15 and not boatrace:GetAttribute("RaceActive") then
+            local root = getRoot()
+            if (root.Position - RacePos:WaitForChild("Boat Race").Value.Position).Magnitude > 27 and not boatrace:GetAttribute("RaceActive") then
                 pcall(function()
                     for i = 1,5 do
                     car.VehicleSeat.AssemblyLinearVelocity = Vector3.zero
-                    car:PivotTo(CFrame.new(184, -6, -1120))
+                    car:PivotTo(RacePos:WaitForChild("Boat Race").Value * CFrame.new(0, 5, 0))
                     task.wait()
                     end
                 end)
@@ -1461,11 +1565,12 @@ task.spawn(function()
             Racing = false
         end
         if not timer.Visible then
-            if player:DistanceFromCharacter(Vector3.new(550, 7, -1057)) > 15 and not frozenlake:GetAttribute("RaceActive") then
+            local root = getRoot()
+            if (root.Position - RacePos:WaitForChild("Frozen Lake").Value.Position).Magnitude > 15 and not frozenlake:GetAttribute("RaceActive") then
                 pcall(function()
                     for i = 1,5 do
                     car.VehicleSeat.AssemblyLinearVelocity = Vector3.zero
-                    car:PivotTo(CFrame.new(550, 7, -1057))
+                    car:PivotTo(RacePos:WaitForChild("Frozen Lake").Value * CFrame.new(0, 3.5, 0))
                     task.wait()
                     end
                 end)
